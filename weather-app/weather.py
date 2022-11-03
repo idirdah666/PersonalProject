@@ -1,61 +1,41 @@
-import argparse
-import imp
-import json
-import argparse
-from configparser import ConfigParser
-from urllib import parse, request, error
+import datetime as dt
+import requests
 
-BASE_WEATHER_URL = "http://api.openweathermap.org/data/2.5/weather"
+BASE_URL = "https://api.openweathermap.org/data/2.5/weather?"
+API_KEY = open("api_key.txt").read().strip()
+CITY = "Boulder"
+UNITS = "imperial"
 
-def _get_api_key_ ():
-    """Get the API key from the config file."""
-    config = ConfigParser()
-    config.read("secrets.ini")
-    return config["openweather"]["api_key"]
+url = BASE_URL + "appid=" + API_KEY + "&q=" + CITY + "&units=" + UNITS
 
-def read_user_cli_args():
-    """Read the user's command line arguments."""
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--city', help='the city to get the weather for')
-    parser.add_argument('--units', help='the units to display the temperature in')
-    return parser.parse_args()
+response = requests.get(url).json()
+feels_like = response["main"]["feels_like"]
+wind_speed = response["wind"]["speed"]
+sunset_time = dt.datetime.fromtimestamp(response["sys"]["sunset"])
+conditions = response["weather"][0]["description"]
+
+print(f"The weather today is going to be {conditions}.")
+if conditions == "snow":
+    print("It's looking snowy today. Take the train!")
+
+if conditions == "rain":
+    print("It's looking rainy today. Bring a jacket with a hood!")
 
 
+print(f"It feels like {feels_like} degrees in Boulder right now.")
+print(f"The wind speed is {wind_speed} mph.")
 
-def get_weather_data(config):
-    """Get the weather data from the OpenWeatherMap API."""
-    url = 'http://api.openweathermap.org/data/2.5/weather'
-    params = {
-        'q': config['city'],
-        'units': config['units'],
-        'appid': config['api_key'],
-    }
-    url += '?' + parse.urlencode(params)
-    response = request.urlopen(url)
-    return json.loads(response.read().decode('utf-8'))
+if feels_like < 60 and wind_speed > 10:
+    print("It's cold and windy. Wear a jacket.")
 
-if __name__ == '__main__':
-    args = read_user_cli_args()
-    config = {
-        'city': args.city,
-        'units': args.units,
-        'api_key': _get_api_key_(),
-    }
-    weather_data = get_weather_data(config)
-    print(weather_data)
+if feels_like > 70 and feels_like < 80 and wind_speed < 5:
+    print("It's a perfect day today. Wear a t-shirt.")
+
+sunset_time_standard = sunset_time.strftime("%I:%M %p")
+print(f"The sunset time today is going to be {sunset_time_standard}.")
 
 
 
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('config_file')
-    args = parser.parse_args()
-    config = ConfigParser()
-    config.read(args.config_file)
-    weather_data = get_weather_data(config['openweathermap'])
-    print(weather_data)
 
-
-print ("Hello world!")
